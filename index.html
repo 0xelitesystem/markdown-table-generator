@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown Table Generator</title>
+<meta name="description" content="Visual editor that turns a table into clean GitHub Flavored Markdown. Add rows and columns, set alignment, import from markdown, TSV, or CSV. Runs entirely in your browser.">
+<link rel="canonical" href="https://0xelitesystem.github.io/markdown-table-generator/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Markdown Table Generator">
+<meta property="og:description" content="Visual editor that turns a table into clean GitHub Flavored Markdown. Runs entirely in your browser, nothing leaves your machine.">
+<meta property="og:url" content="https://0xelitesystem.github.io/markdown-table-generator/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Markdown Table Generator","applicationCategory":"DeveloperApplication","operatingSystem":"Any (browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"url":"https://0xelitesystem.github.io/markdown-table-generator/","author":{"@type":"Person","name":"0xelitesystem","url":"https://elitesystem.ai"}}
+</script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1d21;
+    --muted: #5c636b;
+    --border: #d7dbe0;
+    --panel: #f5f6f8;
+    --panel2: #eceef1;
+    --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --danger: #c2362f;
+    --ok: #15803d;
+    --focus: #2563eb;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171b;
+      --fg: #e6e8eb;
+      --muted: #9aa1aa;
+      --border: #2c313a;
+      --panel: #1b1e23;
+      --panel2: #23272e;
+      --accent: #3b82f6;
+      --accent-fg: #ffffff;
+      --danger: #ef5350;
+      --ok: #4ade80;
+      --focus: #60a5fa;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 28px 18px 64px; }
+  header h1 { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p.sub { margin: 0 0 22px; color: var(--muted); max-width: 60ch; }
+  h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 28px 0 10px; font-weight: 600; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button {
+    font-family: inherit; font-size: 0.85rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--panel); color: var(--fg);
+    padding: 7px 12px; border-radius: 7px; line-height: 1.2;
+  }
+  button:hover { background: var(--panel2); }
+  button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 2px solid var(--focus); outline-offset: 1px;
+  }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  button.primary:hover { filter: brightness(1.07); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .spacer { flex: 1 1 auto; }
+  label.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); user-select: none; cursor: pointer; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 9px; background: var(--panel); padding: 10px; }
+  table.grid { border-collapse: separate; border-spacing: 6px; }
+  table.grid td { padding: 0; vertical-align: middle; }
+  td.corner, td.addcol { width: 1%; }
+  td.rtool { width: 1%; white-space: nowrap; }
+  .rlabel { display: inline-block; font-size: 0.7rem; color: var(--muted); font-weight: 700; padding: 0 6px; }
+  .cbtns { display: flex; align-items: center; gap: 3px; justify-content: center; }
+  .rbtns { display: flex; align-items: center; gap: 3px; }
+  textarea.cell {
+    font-family: var(--sans); font-size: 0.9rem; color: var(--fg);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 8px; min-width: 120px; width: 160px; resize: horizontal;
+    overflow: hidden; line-height: 1.35; min-height: 34px;
+  }
+  tr.headerrow textarea.cell { font-weight: 700; background: var(--panel2); }
+  select.align {
+    font-family: inherit; font-size: 0.74rem; color: var(--fg);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 4px;
+  }
+  button.ibtn {
+    padding: 3px 7px; font-size: 0.82rem; line-height: 1; border-radius: 6px; min-width: 26px;
+  }
+  button.ibtn.danger { color: var(--danger); }
+  button.ibtn.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+  .stats { color: var(--muted); font-size: 0.8rem; margin: 10px 2px 0; }
+
+  .importpanel { border: 1px solid var(--border); border-radius: 9px; background: var(--panel); padding: 14px; margin-top: 10px; }
+  .importpanel[hidden] { display: none; }
+  .importpanel p { margin: 0 0 8px; color: var(--muted); font-size: 0.85rem; }
+  textarea#importText {
+    width: 100%; min-height: 120px; font-family: var(--mono); font-size: 0.85rem;
+    background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 7px; padding: 10px;
+  }
+  .importbtns { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .err { color: var(--danger); font-size: 0.85rem; margin-top: 8px; }
+  .err[hidden] { display: none; }
+
+  .outhead { display: flex; align-items: center; gap: 8px; }
+  .outhead h2 { margin: 28px 0 0; }
+  textarea#output {
+    width: 100%; min-height: 180px; font-family: var(--mono); font-size: 0.86rem;
+    background: var(--panel); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 9px; padding: 14px; margin-top: 10px; line-height: 1.45; white-space: pre;
+  }
+  footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; }
+  footer a { color: var(--accent); }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Markdown Table Generator</h1>
+    <p class="sub">Build a table visually, then copy clean GitHub Flavored Markdown. Set per column alignment, import an existing markdown table or paste from a spreadsheet. Everything runs in your browser.</p>
+  </header>
+
+  <h2>Editor</h2>
+  <div class="toolbar" role="toolbar" aria-label="Table actions">
+    <button id="addRow" class="primary" type="button">Add row</button>
+    <button id="addCol" type="button">Add column</button>
+    <button id="importBtn" type="button">Import</button>
+    <button id="clearBtn" type="button">Clear</button>
+    <span class="spacer"></span>
+    <label class="toggle"><input type="checkbox" id="pretty" checked> Aligned output</label>
+  </div>
+
+  <div id="importPanel" class="importpanel" hidden>
+    <p>Paste a markdown table, tab separated text from a spreadsheet, or CSV. The format is detected automatically.</p>
+    <textarea id="importText" spellcheck="false" aria-label="Paste a table to import"></textarea>
+    <div class="importbtns">
+      <button id="loadBtn" class="primary" type="button">Load</button>
+      <button id="cancelBtn" type="button">Cancel</button>
+    </div>
+    <div id="importErr" class="err" role="alert" hidden></div>
+  </div>
+
+  <div id="grid" aria-label="Table editor"></div>
+  <div id="stats" class="stats" aria-live="polite"></div>
+
+  <div class="outhead">
+    <h2>Markdown</h2>
+  </div>
+  <div class="toolbar" style="margin-top:10px">
+    <button id="copyBtn" class="primary" type="button">Copy</button>
+    <button id="downloadBtn" type="button">Download .md</button>
+  </div>
+  <label for="output" class="visually-hidden">Generated markdown output</label>
+  <textarea id="output" readonly spellcheck="false"></textarea>
+
+  <footer>
+    Single file, no tracking, no network. Everything happens locally in your browser.
+    Free and open source under the MIT license. Built by 0xelitesystem.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ----- state ----- */
+  var state = {
+    align: ["none", "none", "none"],
+    data: [
+      ["Name", "Role", "Location"],
+      ["Ada Lovelace", "Engineer", "London"],
+      ["Grace Hopper", "Compiler author", "New York"]
+    ],
+    pretty: true
+  };
+
+  var gridEl = document.getElementById("grid");
+  var outEl = document.getElementById("output");
+  var statsEl = document.getElementById("stats");
+
+  /* ----- helpers ----- */
+  function htmlEscape(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+  function clen(s) { return Array.from(String(s)).length; } /* count code points */
+  function textAlign(a) { return a === "none" ? "left" : a; }
+
+  /* ----- markdown generation ----- */
+  function escCell(v) {
+    return String(v == null ? "" : v)
+      .replace(/\\/g, "\\\\")          /* backslash first so later escapes are not doubled */
+      .replace(/\r\n|\r|\n/g, "<br>")  /* table cells are single line */
+      .replace(/\|/g, "\\|");          /* a literal pipe must be escaped */
+  }
+  function padCell(s, w, a) {
+    var fill = w - clen(s);
+    if (fill <= 0) return s;
+    if (a === "right") return repeat(" ", fill) + s;
+    if (a === "center") {
+      var l = Math.floor(fill / 2);
+      return repeat(" ", l) + s + repeat(" ", fill - l);
+    }
+    return s + repeat(" ", fill); /* left and none */
+  }
+  function repeat(ch, n) { return n > 0 ? new Array(n + 1).join(ch) : ""; }
+  function sepPretty(w, a) {
+    if (a === "center") return ":" + repeat("-", Math.max(1, w - 2)) + ":";
+    if (a === "right") return repeat("-", Math.max(2, w - 1)) + ":";
+    if (a === "left") return ":" + repeat("-", Math.max(2, w - 1));
+    return repeat("-", Math.max(3, w));
+  }
+  function sepCompact(a) {
+    if (a === "center") return ":---:";
+    if (a === "right") return "---:";
+    if (a === "left") return ":---";
+    return "---";
+  }
+
+  function toMarkdown() {
+    var nCols = state.align.length;
+    if (nCols === 0) return "";
+    var rows = state.data.map(function (r) {
+      var out = [];
+      for (var c = 0; c < nCols; c++) out.push(escCell(r[c] != null ? r[c] : ""));
+      return out;
+    });
+    var header = rows[0]; /* state.data always carries a header row at index 0 */
+    var body = rows.slice(1);
+    var align = state.align;
+
+    if (state.pretty) {
+      var widths = [];
+      for (var c = 0; c < nCols; c++) {
+        var w = clen(header[c] || "");
+        for (var i = 0; i < body.length; i++) w = Math.max(w, clen(body[i][c] || ""));
+        widths[c] = Math.max(w, 3);
+      }
+      var line = function (cells) {
+        return "| " + cells.map(function (cell, c) { return padCell(cell || "", widths[c], align[c]); }).join(" | ") + " |";
+      };
+      var sep = "| " + widths.map(function (w, c) { return sepPretty(w, align[c]); }).join(" | ") + " |";
+      return [line(header), sep].concat(body.map(line)).join("\n");
+    }
+    var cline = function (cells) {
+      var padded = [];
+      for (var c = 0; c < nCols; c++) padded.push(cells[c] || "");
+      return "| " + padded.join(" | ") + " |";
+    };
+    var csep = "| " + align.map(sepCompact).join(" | ") + " |";
+    return [cline(header), csep].concat(body.map(cline)).join("\n");
+  }
+
+  /* ----- import parsing ----- */
+  function toAlign(cell) {
+    var L = cell.charAt(0) === ":";
+    var R = cell.charAt(cell.length - 1) === ":";
+    if (L && R) return "center";
+    if (R) return "right";
+    if (L) return "left";
+    return "none";
+  }
+  function rawCells(line) {
+    var s = line.trim();
+    if (s.charAt(0) === "|") s = s.slice(1);
+    if (s.charAt(s.length - 1) === "|") s = s.slice(0, -1);
+    return s.split("|").map(function (x) { return x.trim(); });
+  }
+  function isSeparatorRow(line) {
+    if (line.indexOf("|") === -1) return false; /* a real GFM delimiter row has pipes */
+    var cells = rawCells(line);
+    if (!cells.length) return false;
+    return cells.every(function (c) { return /^:?-{1,}:?$/.test(c); });
+  }
+  function splitMdRow(line) {
+    var s = line.trim();
+    if (s.charAt(0) === "|") s = s.slice(1);
+    if (s.charAt(s.length - 1) === "|") s = s.slice(0, -1);
+    var cells = [], cur = "";
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === "\\") {
+        var nx = s.charAt(i + 1);
+        if (nx === "|") { cur += "|"; i++; continue; }
+        if (nx === "\\") { cur += "\\"; i++; continue; }
+        cur += "\\"; continue;
+      }
+      if (ch === "|") { cells.push(cur); cur = ""; continue; }
+      cur += ch;
+    }
+    cells.push(cur);
+    return cells.map(function (c) { return c.trim().replace(/<br\s*\/?>/gi, "\n"); });
+  }
+  function parseMarkdown(text) {
+    var lines = text.split(/\r\n|\r|\n/).filter(function (l) { return l.trim() !== ""; });
+    var sepIdx = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (isSeparatorRow(lines[i])) { sepIdx = i; break; }
+    }
+    if (sepIdx < 1) {
+      throw new Error("This looks like a markdown table, but the header row above the separator is missing.");
+    }
+    var header = splitMdRow(lines[sepIdx - 1]);
+    var align = rawCells(lines[sepIdx]).map(toAlign);
+    var body = lines.slice(sepIdx + 1).map(splitMdRow);
+    return { header: header, body: body, align: align };
+  }
+  function parseTSV(text) {
+    return text.split(/\r\n|\r|\n/)
+      .filter(function (l) { return l !== ""; })
+      .map(function (l) { return l.split("\t"); });
+  }
+  function parseCSV(text) {
+    var rows = [], row = [], field = "", i = 0, inQ = false, n = text.length;
+    while (i < n) {
+      var ch = text.charAt(i);
+      if (inQ) {
+        if (ch === '"') {
+          if (text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += ch; i++; continue;
+      }
+      if (ch === '"') { inQ = true; i++; continue; }
+      if (ch === ",") { row.push(field); field = ""; i++; continue; }
+      if (ch === "\r") { i++; continue; }
+      if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+      field += ch; i++;
+    }
+    row.push(field); rows.push(row);
+    if (rows.length && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === "") rows.pop();
+    return rows;
+  }
+  function importText(raw) {
+    var text = raw.replace(/^﻿/, ""); /* strip a byte order mark */
+    if (text.trim() === "") throw new Error("Nothing to import. Paste a markdown table, TSV, or CSV first.");
+    var lines = text.split(/\r\n|\r|\n/);
+    if (lines.some(isSeparatorRow)) return parseMarkdown(text);
+    var rows;
+    if (text.indexOf("\t") !== -1) rows = parseTSV(text);
+    else if (text.indexOf(",") !== -1) rows = parseCSV(text);
+    else rows = lines.filter(function (l) { return l !== ""; }).map(function (l) { return [l]; });
+    rows = rows.filter(function (r) { return r.length > 0; });
+    if (!rows.length) throw new Error("Could not find any rows to import.");
+    return { header: rows[0], body: rows.slice(1), align: [] };
+  }
+  function applyParsed(p) {
+    var nCols = Math.max(
+      p.header.length,
+      p.align.length,
+      p.body.reduce(function (m, r) { return Math.max(m, r.length); }, 0)
+    );
+    nCols = Math.max(nCols, 1);
+    var pad = function (r) {
+      var x = r.slice(0, nCols);
+      while (x.length < nCols) x.push("");
+      return x;
+    };
+    var align = p.align.slice(0, nCols);
+    while (align.length < nCols) align.push("none");
+    state.align = align;
+    state.data = [pad(p.header)].concat(p.body.map(pad));
+    render();
+  }
+
+  /* ----- structural operations ----- */
+  function nCols() { return state.align.length; }
+  function addRow() {
+    var r = [];
+    for (var c = 0; c < nCols(); c++) r.push("");
+    state.data.push(r);
+  }
+  function addCol() {
+    state.align.push("none");
+    state.data.forEach(function (r) { r.push(""); });
+  }
+  function delRow(i) { if (i >= 1 && i < state.data.length) state.data.splice(i, 1); }
+  function delCol(c) {
+    if (nCols() <= 1) return;
+    state.align.splice(c, 1);
+    state.data.forEach(function (r) { r.splice(c, 1); });
+  }
+  function moveRow(i, dir) {
+    var j = i + dir;
+    if (i < 1 || j < 1 || i >= state.data.length || j >= state.data.length) return;
+    var t = state.data[i]; state.data[i] = state.data[j]; state.data[j] = t;
+  }
+  function moveCol(c, dir) {
+    var j = c + dir;
+    if (c < 0 || j < 0 || c >= nCols() || j >= nCols()) return;
+    var t = state.align[c]; state.align[c] = state.align[j]; state.align[j] = t;
+    state.data.forEach(function (r) { var x = r[c]; r[c] = r[j]; r[j] = x; });
+  }
+
+  /* ----- rendering ----- */
+  function autosize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.max(34, el.scrollHeight) + "px";
+  }
+  function opt(val, cur, label) {
+    return '<option value="' + val + '"' + (val === cur ? " selected" : "") + ">" + label + "</option>";
+  }
+  function render() {
+    var cols = nCols();
+    var a = state.align;
+    var h = [];
+    h.push('<div class="tablewrap"><table class="grid"><tbody>');
+
+    /* column tools row */
+    h.push('<tr class="coltools"><td class="corner"></td>');
+    for (var c = 0; c < cols; c++) {
+      h.push('<td class="ctool"><div class="cbtns">');
+      h.push('<button class="ibtn" type="button" data-action="col-left" data-c="' + c + '" title="Move column left"' + (c === 0 ? " disabled" : "") + ">&#8592;</button>");
+      h.push('<select class="align" data-action="align" data-c="' + c + '" title="Column alignment" aria-label="Column ' + (c + 1) + ' alignment">');
+      h.push(opt("none", a[c], "Default") + opt("left", a[c], "Left") + opt("center", a[c], "Center") + opt("right", a[c], "Right"));
+      h.push("</select>");
+      h.push('<button class="ibtn" type="button" data-action="col-right" data-c="' + c + '" title="Move column right"' + (c === cols - 1 ? " disabled" : "") + ">&#8594;</button>");
+      h.push('<button class="ibtn danger" type="button" data-action="col-del" data-c="' + c + '" title="Delete column"' + (cols <= 1 ? " disabled" : "") + ">&#215;</button>");
+      h.push("</div></td>");
+    }
+    h.push('<td class="addcol"><button class="ibtn" type="button" data-action="col-add" title="Add column">&#43;</button></td></tr>');
+
+    /* header inputs row */
+    h.push('<tr class="headerrow"><td class="rtool"><span class="rlabel">Head</span></td>');
+    for (c = 0; c < cols; c++) {
+      h.push('<td><textarea class="cell" data-r="0" data-c="' + c + '" rows="1" aria-label="Header column ' + (c + 1) + '" style="text-align:' + textAlign(a[c]) + '">' + htmlEscape(state.data[0][c] || "") + "</textarea></td>");
+    }
+    h.push("<td></td></tr>");
+
+    /* body rows */
+    for (var r = 1; r < state.data.length; r++) {
+      h.push('<tr><td class="rtool"><div class="rbtns">');
+      h.push('<button class="ibtn" type="button" data-action="row-up" data-r="' + r + '" title="Move row up"' + (r === 1 ? " disabled" : "") + ">&#8593;</button>");
+      h.push('<button class="ibtn" type="button" data-action="row-down" data-r="' + r + '" title="Move row down"' + (r === state.data.length - 1 ? " disabled" : "") + ">&#8595;</button>");
+      h.push('<button class="ibtn danger" type="button" data-action="row-del" data-r="' + r + '" title="Delete row">&#215;</button>");
+      h.push("</div></td>");
+      for (c = 0; c < cols; c++) {
+        h.push('<td><textarea class="cell" data-r="' + r + '" data-c="' + c + '" rows="1" aria-label="Row ' + r + " column " + (c + 1) + '" style="text-align:' + textAlign(a[c]) + '">' + htmlEscape(state.data[r][c] || "") + "</textarea></td>");
+      }
+      h.push("<td></td></tr>");
+    }
+
+    h.push("</tbody></table></div>");
+    gridEl.innerHTML = h.join("");
+
+    var cells = gridEl.querySelectorAll("textarea.cell");
+    for (var k = 0; k < cells.length; k++) autosize(cells[k]);
+
+    updateOutput();
+    updateStats();
+  }
+  function updateOutput() { outEl.value = toMarkdown(); }
+  function updateStats() {
+    statsEl.textContent = nCols() + (nCols() === 1 ? " column" : " columns") + ", " +
+      (state.data.length - 1) + ((state.data.length - 1) === 1 ? " data row" : " data rows");
+  }
+
+  /* ----- grid events ----- */
+  gridEl.addEventListener("input", function (e) {
+    var t = e.target;
+    if (!t.classList || !t.classList.contains("cell")) return;
+    var r = +t.getAttribute("data-r");
+    var c = +t.getAttribute("data-c");
+    state.data[r][c] = t.value;
+    autosize(t);
+    updateOutput();
+  });
+  gridEl.addEventListener("change", function (e) {
+    var t = e.target;
+    if (!t.classList || t.getAttribute("data-action") !== "align") return;
+    var c = +t.getAttribute("data-c");
+    state.align[c] = t.value;
+    var cellsInCol = gridEl.querySelectorAll('textarea.cell[data-c="' + c + '"]');
+    for (var i = 0; i < cellsInCol.length; i++) cellsInCol[i].style.textAlign = textAlign(t.value);
+    updateOutput();
+  });
+  gridEl.addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest("button[data-action]") : null;
+    if (!btn) return;
+    var action = btn.getAttribute("data-action");
+    var c = btn.getAttribute("data-c");
+    var r = btn.getAttribute("data-r");
+    switch (action) {
+      case "col-add": addCol(); break;
+      case "col-del": delCol(+c); break;
+      case "col-left": moveCol(+c, -1); break;
+      case "col-right": moveCol(+c, 1); break;
+      case "row-del": delRow(+r); break;
+      case "row-up": moveRow(+r, -1); break;
+      case "row-down": moveRow(+r, 1); break;
+      default: return;
+    }
+    render();
+  });
+  gridEl.addEventListener("keydown", function (e) {
+    if (e.key !== "Tab" || e.shiftKey) return;
+    var t = e.target;
+    if (!t.classList || !t.classList.contains("cell")) return;
+    var r = +t.getAttribute("data-r");
+    var c = +t.getAttribute("data-c");
+    if (r === state.data.length - 1 && c === nCols() - 1) {
+      e.preventDefault();
+      addRow();
+      render();
+      var next = gridEl.querySelector('textarea.cell[data-r="' + (state.data.length - 1) + '"][data-c="0"]');
+      if (next) next.focus();
+    }
+  });
+
+  /* ----- toolbar ----- */
+  document.getElementById("addRow").addEventListener("click", function () { addRow(); render(); });
+  document.getElementById("addCol").addEventListener("click", function () { addCol(); render(); });
+  document.getElementById("clearBtn").addEventListener("click", function () {
+    if (!window.confirm("Clear the table and start over?")) return;
+    state.align = ["none", "none"];
+    state.data = [["", ""], ["", ""]];
+    render();
+  });
+  document.getElementById("pretty").addEventListener("change", function (e) {
+    state.pretty = e.target.checked;
+    updateOutput();
+  });
+
+  /* ----- import panel ----- */
+  var importPanel = document.getElementById("importPanel");
+  var importArea = document.getElementById("importText");
+  var importErr = document.getElementById("importErr");
+  function showError(msg) { importErr.textContent = msg; importErr.hidden = false; }
+  function clearError() { importErr.textContent = ""; importErr.hidden = true; }
+  function openImport() {
+    clearError();
+    importPanel.hidden = false;
+    importArea.focus();
+  }
+  function closeImport() { importPanel.hidden = true; }
+  document.getElementById("importBtn").addEventListener("click", function () {
+    if (importPanel.hidden) openImport(); else closeImport();
+  });
+  document.getElementById("cancelBtn").addEventListener("click", closeImport);
+  document.getElementById("loadBtn").addEventListener("click", function () {
+    try {
+      var parsed = importText(importArea.value);
+      applyParsed(parsed);
+      clearError();
+      closeImport();
+    } catch (err) {
+      showError(err && err.message ? err.message : String(err));
+    }
+  });
+
+  /* ----- copy and download ----- */
+  function flash(btn, msg) {
+    var old = btn.textContent;
+    btn.textContent = msg;
+    btn.disabled = true;
+    window.setTimeout(function () { btn.textContent = old; btn.disabled = false; }, 1200);
+  }
+  function legacyCopy(text) {
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (_) { return false; }
+  }
+  var copyBtn = document.getElementById("copyBtn");
+  copyBtn.addEventListener("click", function () {
+    var text = outEl.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () { flash(copyBtn, "Copied"); },
+        function () { flash(copyBtn, legacyCopy(text) ? "Copied" : "Copy failed"); }
+      );
+    } else {
+      flash(copyBtn, legacyCopy(text) ? "Copied" : "Copy failed");
+    }
+  });
+  document.getElementById("downloadBtn").addEventListener("click", function () {
+    var blob = new Blob([outEl.value], { type: "text/markdown;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "table.md";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+
+  /* ----- boot ----- */
+  render();
+})();
+</script>
+</body>
+</html>
