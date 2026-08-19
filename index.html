@@ -345,7 +345,7 @@
     return rows;
   }
   function importText(raw) {
-    var text = raw.replace(/^﻿/, ""); /* strip a byte order mark */
+    var text = raw.replace(/^\uFEFF/, ""); /* strip a byte order mark */
     if (text.trim() === "") throw new Error("Nothing to import. Paste a markdown table, TSV, or CSV first.");
     var lines = text.split(/\r\n|\r|\n/);
     if (lines.some(isSeparatorRow)) return parseMarkdown(text);
