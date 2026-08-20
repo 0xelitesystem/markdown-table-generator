@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -122,6 +122,35 @@
   footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; }
   footer a { color: var(--accent); }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+<style>
+/* elitesystem brand tokens: chrome only, meaning preserved */
+:root, :root[data-theme="dark"] {
+  --accent: #d4ff3a;
+  --accent-fg: #0a0a0a;
+  --bg: #0a0a0a;
+  --border: #1f1f1d;
+  --danger: #ff6450;
+  --fg: #e8e8e3;
+  --muted: #6e6e68;
+  --ok: #7ddc7d;
+  --panel: #111110;
+  --panel2: #161614;
+}
+:root[data-theme="light"] {
+  --accent: #2d6b00;
+  --accent-fg: #ffffff;
+  --bg: #e8ebef;
+  --border: #c8cdd5;
+  --danger: #b8341a;
+  --fg: #0a0a0a;
+  --muted: #6e6e68;
+  --ok: #1a5c2e;
+  --panel: #dee2e8;
+  --panel2: #d3d7df;
+}
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
 </style>
 </head>
 <body>
